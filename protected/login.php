@@ -11,6 +11,7 @@ if($_POST){
   header("Location: home.php");
  }
 }
+
 ?>
 <link rel="stylesheet" href="style.css">
 <div class="container card">
