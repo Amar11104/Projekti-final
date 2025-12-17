@@ -1,43 +1,36 @@
 <?php
-session_start();
-require "../database-config.php";
+include 'database-config.php';
+include 'navbar.php';
 
-if (!isset($_SESSION["user"])) {
-    header("Location: ../login.php");
-    exit();
+if(!isset($_SESSION['user'])){
+    header("Location: login.php");
+    exit;
 }
 
-$msg = "";
-$success = false;
+if($_POST){
+    $current = $_POST['current_password'];
+    $new = $_POST['new_password'];
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $old = $_POST["old"];
-    $new = password_hash($_POST["new"], PASSWORD_DEFAULT);
+    $user = $_SESSION['user'];
+    $res = $conn->query("SELECT password FROM users WHERE id=".$user['id']);
+    $u = $res->fetch_assoc();
 
-    $u = $_SESSION["user"];
-    $res = mysqli_query($conn, "SELECT * FROM usersss WHERE username='$u'");
-    $row = mysqli_fetch_assoc($res);
-
-    if (!password_verify($old, $row["password"])) {
-        $msg = "Old password incorrect.";
+    if(password_verify($current, $u['password'])){
+        $hash = password_hash($new, PASSWORD_DEFAULT);
+        $conn->query("UPDATE users SET password='$hash' WHERE id=".$user['id']);
+        echo "<p style='color:green;'>Password changed successfully!</p>";
     } else {
-        mysqli_query($conn, "UPDATE usersss SET password='$new' WHERE username='$u'");
-        $msg = "Password changed!";
-        $success = true;
+        echo "<p style='color:red;'>Current password is incorrect.</p>";
     }
 }
 ?>
-
-<?php include "../navbar.php"; ?>
-
-<div class="container">
-    <h2>Change Password</h2>
-
-    <form method="POST">
-        <input type="password" name="old" placeholder="Old password" required>
-        <input type="password" name="new" placeholder="New password" required>
-        <button type="submit">Update Password</button>
-    </form>
-
-    <p class="<?php echo $success ? 'success' : 'message'; ?>"><?php echo $msg; ?></p>
+<link rel="stylesheet" href="style.css">
+<div class="container card">
+<h2>Change Password</h2>
+<form method="POST">
+<input type="password" name="current_password" placeholder="Current Password" required>
+<input type="password" name="new_password" placeholder="New Password" required>
+<button>Change Password</button>
+</form>
 </div>
+<?php include 'footer.php'; ?>

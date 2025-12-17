@@ -1,36 +1,43 @@
 <?php
-session_start();
-require "../../database-config.php";
-if (!isset($_SESSION["user"])) {
+include '../database-config.php';
+include '../navbar.php';
+
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
     header("Location: ../login.php");
-    exit();
+    exit;
 }
-include "../navbar.php";
 
-$id = $_GET['id'];
-$res = mysqli_query($conn, "SELECT * FROM business_items WHERE id=$id");
-$item = mysqli_fetch_assoc($res);
+if(isset($_GET['id'])){
+    $id = intval($_GET['id']);
+    $res = $conn->query("SELECT * FROM bookings WHERE id=$id");
+    $booking = $res->fetch_assoc();
+}
 
-$msg = "";
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = mysqli_real_escape_string($conn, $_POST["name"]);
-    $desc = mysqli_real_escape_string($conn, $_POST["description"]);
-    $price = $_POST["price"];
+if($_POST){
+    $date = $_POST['booking_date'];
+    $time = $_POST['booking_time'];
+    $guests = $_POST['guests'];
+    $note = $_POST['note'];
+    $paid = isset($_POST['paid']) ? 1 : 0;
 
-    mysqli_query($conn, "UPDATE business_items SET name='$name', description='$desc', price='$price' WHERE id=$id");
-    $msg = "Item updated successfully!";
+    $stmt = $conn->prepare("UPDATE bookings SET booking_date=?, booking_time=?, guests=?, note=?, paid=? WHERE id=?");
+    $stmt->bind_param("ssisii", $date, $time, $guests, $note, $paid, $id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: list.php");
 }
 ?>
-
-<div class="container" style="max-width:500px; margin-top:50px;">
-    <h2><?php echo isset($item) ? "Edit Product" : "Add New Product"; ?></h2>
-    <form method="POST">
-        <input type="text" name="name" placeholder="Product Name" value="<?php echo $item['name'] ?? ''; ?>" required><br>
-        <textarea name="description" placeholder="Description"><?php echo $item['description'] ?? ''; ?></textarea><br>
-        <input type="text" name="price" placeholder="Price" value="<?php echo $item['price'] ?? ''; ?>" required><br><br>
-        <button type="submit"><?php echo isset($item) ? "Update" : "Add"; ?> Product</button>
-    </form>
-    <p class="success"><?php echo $msg ?? ''; ?></p>
-    <a href="list.php">Back to List</a>
+<link rel="stylesheet" href="../style.css">
+<div class="container card">
+<h2>Edit Booking</h2>
+<form method="POST">
+    <input type="date" name="booking_date" value="<?= $booking['booking_date'] ?>" required>
+    <input type="time" name="booking_time" value="<?= $booking['booking_time'] ?>" required>
+    <input type="number" name="guests" value="<?= $booking['guests'] ?>" required>
+    <textarea name="note"><?= $booking['note'] ?></textarea>
+    <label><input type="checkbox" name="paid" <?= $booking['paid'] ? 'checked' : '' ?>> Paid</label>
+    <button>Update Booking</button>
+</form>
 </div>
-
+<?php include '../footer.php'; ?>

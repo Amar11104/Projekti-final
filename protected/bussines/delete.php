@@ -1,9 +1,16 @@
 <?php
-session_start();
-require "../../database-config.php";
-if (!isset($_SESSION["user"])) header("Location: ../login.php");
+include '../database-config.php';
 
-$id = $_GET['id'];
-mysqli_query($conn, "DELETE FROM business_items WHERE id=$id");
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
+    header("Location: ../login.php");
+    exit;
+}
+
+if(isset($_GET['id'])){
+    $id = intval($_GET['id']);
+    $conn->query("DELETE FROM bookings WHERE id=$id");
+}
+
 header("Location: list.php");
-exit();
+exit;
+?>

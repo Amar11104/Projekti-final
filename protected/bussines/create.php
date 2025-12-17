@@ -1,32 +1,56 @@
 <?php
-session_start();
-require "../../database-config.php";
-if (!isset($_SESSION["user"])) {
+include '../database-config.php';
+include '../navbar.php';
+
+if (!isset($_SESSION['user'])) {
     header("Location: ../login.php");
-    exit();
+    exit;
 }
-include "../navbar.php";
 
-$msg = "";
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = mysqli_real_escape_string($conn, $_POST["name"]);
-    $desc = mysqli_real_escape_string($conn, $_POST["description"]);
-    $price = $_POST["price"];
+if($_POST){
+    $user_id = $_SESSION['user']['id'];
+    $date = $_POST['booking_date'];
+    $time = $_POST['booking_time'];
+    $guests = $_POST['guests'];
+    $note = $_POST['note'];
 
-    mysqli_query($conn, "INSERT INTO business_items (name, description, price) VALUES ('$name', '$desc', '$price')");
-    $msg = "Item added successfully!";
+  
+
+    $stmt = $conn->prepare("INSERT INTO bookings(user_id, booking_date, booking_time, guests, note) VALUES(?,?,?,?,?)");
+$stmt->bind_param("issis", $user_id, $date, $time, $guests, $note);
+$stmt->execute();
+$booking_id = $stmt->insert_id; // get the inserted booking ID
+$stmt->close();
+
+$total = $guests * 20; // $20 per guest
+
+// Send booking confirmation email
+$stmt = $conn->prepare("INSERT INTO bookings(user_id, booking_date, booking_time, guests, note) VALUES(?,?,?,?,?)");
+$stmt->bind_param("issis", $user_id, $date, $time, $guests, $note);
+$stmt->execute();
+$booking_id = $stmt->insert_id; // get booking ID
+$stmt->close();
+
+// Redirect to fake payment page
+header("Location: pay.php?id=$booking_id");
+exit;
+
+
+
+
+
+    echo "<p style='color:green;'>Booking created successfully! A confirmation email has been sent.</p>";
 }
 ?>
-
-<div class="container" style="max-width:500px; margin-top:50px;">
-    <h2><?php echo isset($item) ? "Edit Product" : "Add New Product"; ?></h2>
-    <form method="POST">
-        <input type="text" name="name" placeholder="Product Name" value="<?php echo $item['name'] ?? ''; ?>" required><br>
-        <textarea name="description" placeholder="Description"><?php echo $item['description'] ?? ''; ?></textarea><br>
-        <input type="text" name="price" placeholder="Price" value="<?php echo $item['price'] ?? ''; ?>" required><br><br>
-        <button type="submit"><?php echo isset($item) ? "Update" : "Add"; ?> Product</button>
-    </form>
-    <p class="success"><?php echo $msg ?? ''; ?></p>
-    <a href="list.php">Back to List</a>
+<link rel="stylesheet" href="../style.css">
+<div class="container card">
+<h2>Book a Table</h2>
+<form method="POST">
+    <input type="date" name="booking_date" required>
+    <input type="time" name="booking_time" required>
+    <input type="number" name="guests" placeholder="Number of guests" required>
+    <textarea name="note" placeholder="Special requests"></textarea>
+    <button>Reserve</button>
+</form>
 </div>
-
+<?php include '../footer.php'; ?>
